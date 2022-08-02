@@ -4,6 +4,16 @@ set -eu
 
 [ "$(id -u)" != '0' ] && echo 'Error: this program needs to be run as root' && exit 1
 
+# Check if Arch repos have already been enabled
+
+if grep -E '\[extra\]|\[community\]|\[multilib\]' /etc/pacman.conf 1>/dev/null; then
+
+	echo 'Error: Arch repos have already been enabled in /etc/pacman.conf'
+
+	exit 1
+
+fi
+
 trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f repos.html arch-repos.txt universe-repos.txt' INT
 
 # Define some initial variables
@@ -14,18 +24,42 @@ NEWLINE='
 
 '
 
+PROGRAM_NAME="$(basename "$0")"
+
 # Define some useful functions 
 
 print_help()
 {
 
 	cat <<EOF
-Usage: $0 [OPTIONS]
+Usage: $PROGRAM_NAME [OPTIONS]
 
 Available Options:
 
 	--no-multilib	Prevent the multilib repos from being installed in /etc/pacman.conf
 EOF
+
+}
+
+print_msg()
+{
+
+	echo "$PROGRAM_NAME: $1..."
+
+}
+
+install_pkg()
+{
+
+	print_msg "Installing $1"
+
+	if ! pacman -S --noconfirm "$1"; then
+
+		echo "Error: failed to install $1"
+
+		exit 1
+
+	fi
 
 }
 
@@ -88,15 +122,23 @@ done
 
 # Make a backup of /etc/pacman.conf
 
-echo 'Making a copy of /etc/pacman.conf into /etc/pacman.conf.orig...'
+print_msg 'Making a copy of /etc/pacman.conf into /etc/pacman.conf.orig'
 
 cp -i /etc/pacman.conf /etc/pacman.conf.orig
+
+# Install wget if not installed
+
+if ! which wget 1>/dev/null 2>&1; then
+
+	install_pkg wget
+
+fi
 
 # get the latest universe repos
 
 URL='https://wiki.artixlinux.org/Main/Repositories'
 
-echo 'Getting the latest Universe repos...'
+print_msg 'Getting the latest Universe repos'
 
 if wget -q "$URL" -O repos.html; then
 
@@ -113,11 +155,11 @@ fi
 
 # Add the universe repos and install artix-archlinux-support pkg
 
-echo 'Adding the Universe repos to /etc/pacman.conf...'
+print_msg 'Adding the Universe repos to /etc/pacman.conf'
 
 if grep -F '[universe]' /etc/pacman.conf 1>/dev/null; then
 
-	printf '\tThe [universe] directive already exists in /etc/pacman.conf, skipping this step...\n'
+	print_msg 'The [universe] directive already exists in /etc/pacman.conf, skipping this step'
 
 else
 
@@ -127,19 +169,11 @@ fi
 
 sync_with_repos
 
-echo 'Installing artix-archlinux-support...'
-
-if ! pacman -S --noconfirm artix-archlinux-support; then
-
-	echo 'Error: failed to install artix-archlinux-support'
-
-	exit 1
-
-fi
+install_pkg artix-archlinux-support
 
 # Add the Arch repos
 
-echo 'Adding Arch repos...'
+print_msg 'Adding Arch repos'
 
 awk '/^ *\[extra\]/,/<\/pre>/' repos.html | sed -e '/<\/pre>/d; s/^ \+//' -e "\$a$NEWLINE" > arch-repos.txt
 
@@ -167,7 +201,7 @@ fi
 
 add_repos '[universe]' 'arch-repos.txt'
 
-echo 'Running "pacman-key --populate archlinux"...'
+print_msg 'Running "pacman-key --populate archlinux"'
 
 if ! pacman-key --populate archlinux; then
 
