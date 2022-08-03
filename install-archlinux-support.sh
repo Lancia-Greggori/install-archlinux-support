@@ -48,6 +48,15 @@ print_msg()
 
 }
 
+clean_up()
+{
+
+	cp /etc/pacman.conf.orig /etc/pacman.conf
+
+	rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt
+
+}
+
 install_pkg()
 {
 
@@ -56,6 +65,8 @@ install_pkg()
 	if ! pacman -S --noconfirm "$1"; then
 
 		echo "Error: failed to install $1"
+
+		clean_up
 
 		exit 1
 
@@ -99,6 +110,8 @@ sync_with_repos()
 	if ! pacman -Sy; then
 
 		echo 'Error: failed to sync using "pacman -Syu"'
+
+		clean_up
 
 		exit 1
 
