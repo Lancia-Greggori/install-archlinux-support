@@ -14,7 +14,7 @@ if grep -E '\[extra\]|\[community\]|\[multilib\]' /etc/pacman.conf 1>/dev/null; 
 
 fi
 
-trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f repos.html arch-repos.txt universe-repos.txt' INT
+trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt' INT
 
 # Define some initial variables
 
@@ -140,10 +140,10 @@ URL='https://wiki.artixlinux.org/Main/Repositories'
 
 print_msg 'Getting the latest Universe repos'
 
-if wget -q "$URL" -O repos.html; then
+if wget -q "$URL" -O /tmp/repos.html; then
 
-	awk '/<pre>.*\[universe\]/,/<\/pre>/' repos.html | grep -o '>.\+</a>' \
-		| sed -e 's/>//g; s/<\/a>*//g; s/^/Server = /; 1i [universe]' -e "\$a$NEWLINE" > universe-repos.txt
+	awk '/<pre>.*\[universe\]/,/<\/pre>/' /tmp/repos.html | grep -o '>.\+</a>' \
+		| sed -e 's/>//g; s/<\/a>*//g; s/^/Server = /; 1i [universe]' -e "\$a$NEWLINE" > /tmp/universe-repos.txt
 
 else
 
@@ -163,7 +163,7 @@ if grep -F '[universe]' /etc/pacman.conf 1>/dev/null; then
 
 else
 
-	add_repos '[galaxy]' 'universe-repos.txt'
+	add_repos '[galaxy]' '/tmp/universe-repos.txt'
 
 fi
 
@@ -175,19 +175,19 @@ install_pkg artix-archlinux-support
 
 print_msg 'Adding Arch repos'
 
-awk '/^ *\[extra\]/,/<\/pre>/' repos.html | sed -e '/<\/pre>/d; s/^ \+//' -e "\$a$NEWLINE" > arch-repos.txt
+awk '/^ *\[extra\]/,/<\/pre>/' /tmp/repos.html | sed -e '/<\/pre>/d; s/^ \+//' -e "\$a$NEWLINE" > /tmp/arch-repos.txt
 
 # Disable multilib repos if requested
 
 if [ "$NO_MULTILIB" = 'true' ]; then
 
-	LINE_NUM_START="$(grep -Fn '[multilib]' arch-repos.txt | cut -d':' -f1)"
+	LINE_NUM_START="$(grep -Fn '[multilib]' /tmp/arch-repos.txt | cut -d':' -f1)"
 
 	LINE_NUM_END="$LINE_NUM_START"
 
 	while true; do
 
-		if sed -n "$((LINE_NUM_END + 1))p" arch-repos.txt | grep -E '^(Include|Server)'; then
+		if sed -n "$((LINE_NUM_END + 1))p" /tmp/arch-repos.txt | grep -E '^(Include|Server)'; then
 
 			LINE_NUM_END="$((LINE_NUM_END + 1))"
 
@@ -199,11 +199,11 @@ if [ "$NO_MULTILIB" = 'true' ]; then
 
 	done
 
-	sed -i'' "${LINE_NUM_START},${LINE_NUM_END}d" arch-repos.txt
+	sed -i'' "${LINE_NUM_START},${LINE_NUM_END}d" /tmp/arch-repos.txt
 
 fi
 
-add_repos '[universe]' 'arch-repos.txt'
+add_repos '[universe]' '/tmp/arch-repos.txt'
 
 print_msg 'Running "pacman-key --populate archlinux"'
 
@@ -215,7 +215,7 @@ fi
 
 sync_with_repos
 
-rm repos.html universe-repos.txt arch-repos.txt
+rm /tmp/repos.html /tmp/universe-repos.txt /tmp/arch-repos.txt
 
 echo 'Arch repositories have been added successfully, Have a nice day!'
 
