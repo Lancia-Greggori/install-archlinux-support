@@ -181,13 +181,15 @@ awk '/^ *\[extra\]/,/<\/pre>/' repos.html | sed -e '/<\/pre>/d; s/^ \+//' -e "\$
 
 if [ "$NO_MULTILIB" = 'true' ]; then
 
-	LINE_NUM="$(grep -Fn '[multilib]' arch-repos.txt | cut -d':' -f1)"
+	LINE_NUM_START="$(grep -Fn '[multilib]' arch-repos.txt | cut -d':' -f1)"
+
+	LINE_NUM_END="$LINE_NUM_START"
 
 	while true; do
 
-		if sed -n "${LINE_NUM}p" arch-repos.txt | grep -E '^(Include|Server|\[multilib\])'; then
+		if sed -n "$((LINE_NUM_END + 1))p" arch-repos.txt | grep -E '^(Include|Server)'; then
 
-			sed -i'' "${LINE_NUM}d" arch-repos.txt
+			LINE_NUM_END="$((LINE_NUM_END + 1))"
 
 		else 
 
@@ -196,6 +198,8 @@ if [ "$NO_MULTILIB" = 'true' ]; then
 		fi
 
 	done
+
+	sed -i'' "${LINE_NUM_START},${LINE_NUM_END}d" arch-repos.txt
 
 fi
 
