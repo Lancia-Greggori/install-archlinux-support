@@ -6,7 +6,7 @@ set -eu
 
 # Check if Arch repos have already been enabled
 
-if grep -E '\[extra\]|\[community\]|\[multilib\]' /etc/pacman.conf 1>/dev/null; then
+if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
 
 	echo 'Error: Arch repos have already been enabled in /etc/pacman.conf'
 
