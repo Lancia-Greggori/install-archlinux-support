@@ -30,6 +30,11 @@ print_msg()
 	echo "$PROGRAM_NAME: $1..."
 }
 
+print_error()
+{
+	echo "Error: $1" 1>&2
+}
+
 clean_up()
 {
 	cp /etc/pacman.conf.orig /etc/pacman.conf
@@ -43,7 +48,7 @@ install_pkg()
 
 	if ! pacman -S --noconfirm "$1"; then
 
-		echo "Error: failed to install $1"
+		print_error "failed to install $1"
 
 		clean_up
 
@@ -84,7 +89,7 @@ sync_with_repos()
 {
 	if ! pacman -Sy; then
 
-		echo 'Error: failed to sync using "pacman -Syu"'
+		print_error 'failed to sync using "pacman -Syu"'
 
 		clean_up
 
@@ -94,13 +99,13 @@ sync_with_repos()
 }
 
 
-[ "$(id -u)" != '0' ] && echo 'Error: this program needs to be run as root' && exit 1
+[ "$(id -u)" != '0' ] && print_error 'this program needs to be run as root' && exit 1
 
 # Check if Arch repos have already been enabled
 
 if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
 
-	echo 'Error: Arch repos have already been enabled in /etc/pacman.conf'
+	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
 
 	exit 1
 
@@ -117,7 +122,7 @@ trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f /tmp/repos.html /tmp/arc
 
 		--no-multilib)	NO_MULTILIB='true' ;;
 
-		*)	echo 'Error: unknown option' && print_help && exit 1 ;;
+		*)	print_error 'unknown option' && print_help && exit 1 ;;
 
 	esac
 
@@ -150,7 +155,7 @@ if wget -q "$URL" -O /tmp/repos.html; then
 
 else
 
-	echo "Error: failed to retrieve the list of repositories from $URL"
+	print_error "failed to retrieve the list of repositories from $URL"
 
 	exit 1
 
@@ -212,7 +217,7 @@ print_msg 'Running "pacman-key --populate archlinux"'
 
 if ! pacman-key --populate archlinux; then
 
-	echo 'Error: failed in running command "pacman-key --populate archlinux"'
+	print_error 'failed in running command "pacman-key --populate archlinux"'
 
 fi
 
