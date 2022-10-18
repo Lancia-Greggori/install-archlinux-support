@@ -4,21 +4,6 @@
 
 set -eu
 
-[ "$(id -u)" != '0' ] && echo 'Error: this program needs to be run as root' && exit 1
-
-# Check if Arch repos have already been enabled
-
-if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
-
-	echo 'Error: Arch repos have already been enabled in /etc/pacman.conf'
-
-	exit 1
-
-fi
-
-trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt' INT
-
-# Define some initial variables
 
 NO_MULTILIB='false'
 
@@ -28,7 +13,6 @@ NEWLINE='
 
 PROGRAM_NAME="$(basename "$0")"
 
-# Define some useful functions
 
 print_help()
 {
@@ -108,6 +92,22 @@ sync_with_repos()
 
 	fi
 }
+
+
+[ "$(id -u)" != '0' ] && echo 'Error: this program needs to be run as root' && exit 1
+
+# Check if Arch repos have already been enabled
+
+if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
+
+	echo 'Error: Arch repos have already been enabled in /etc/pacman.conf'
+
+	exit 1
+
+fi
+
+trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt' INT
+
 
 [ -n "$*" ] && for arg in "$@"; do
 
@@ -221,4 +221,3 @@ sync_with_repos
 rm /tmp/repos.html /tmp/universe-repos.txt /tmp/arch-repos.txt
 
 echo 'Arch repositories have been added successfully, Have a nice day!'
-
