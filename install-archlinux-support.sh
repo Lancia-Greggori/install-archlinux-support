@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# version: 1.3
+
 set -eu
 
 [ "$(id -u)" != '0' ] && echo 'Error: this program needs to be run as root' && exit 1
@@ -26,11 +28,10 @@ NEWLINE='
 
 PROGRAM_NAME="$(basename "$0")"
 
-# Define some useful functions 
+# Define some useful functions
 
 print_help()
 {
-
 	cat <<EOF
 Usage: $PROGRAM_NAME [OPTIONS]
 
@@ -38,28 +39,22 @@ Available Options:
 
 	--no-multilib	Prevent the multilib repos from being installed in /etc/pacman.conf
 EOF
-
 }
 
 print_msg()
 {
-
 	echo "$PROGRAM_NAME: $1..."
-
 }
 
 clean_up()
 {
-
 	cp /etc/pacman.conf.orig /etc/pacman.conf
 
 	rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt
-
 }
 
 install_pkg()
 {
-
 	print_msg "Installing $1"
 
 	if ! pacman -S --noconfirm "$1"; then
@@ -71,12 +66,10 @@ install_pkg()
 		exit 1
 
 	fi
-
 }
 
 add_repos()
 {
-
 	# Arg1: the directive to add after
 	# Arg2: the file that contains the repos to be added
 
@@ -101,12 +94,10 @@ add_repos()
 		fi
 
 	done
-
 }
 
 sync_with_repos()
 {
-
 	if ! pacman -Sy; then
 
 		echo 'Error: failed to sync using "pacman -Syu"'
@@ -116,7 +107,6 @@ sync_with_repos()
 		exit 1
 
 	fi
-
 }
 
 [ -n "$*" ] && for arg in "$@"; do
@@ -204,7 +194,7 @@ if [ "$NO_MULTILIB" = 'true' ]; then
 
 			LINE_NUM_END="$((LINE_NUM_END + 1))"
 
-		else 
+		else
 
 			break
 
