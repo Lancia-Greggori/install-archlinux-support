@@ -99,7 +99,7 @@ sync_with_repos()
 }
 
 
-[ "$(id -u)" != '0' ] && print_error 'this program needs to be run as root' && exit 1
+[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' && exit 1
 
 # Check if Arch repos have already been enabled
 
