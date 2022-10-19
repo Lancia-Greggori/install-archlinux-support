@@ -130,7 +130,7 @@ cp -i /etc/pacman.conf /etc/pacman.conf.orig
 
 # Install wget if not installed
 
-if ! which wget 1>/dev/null 2>&1; then
+if ! command -v wget 1>/dev/null 2>&1; then
 
 	install_pkg wget
 
