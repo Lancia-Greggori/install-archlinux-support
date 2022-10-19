@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# version: 1.3
+# version: 1.1.5
 
 set -eu
 
