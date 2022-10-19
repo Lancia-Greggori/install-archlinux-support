@@ -25,15 +25,9 @@ Available Options:
 EOF
 }
 
-print_msg()
-{
-	echo "$PROGRAM_NAME: $1..."
-}
+print_msg() { echo "$PROGRAM_NAME: $1..." ; }
 
-print_error()
-{
-	echo "Error: $1" 1>&2
-}
+print_error() { echo "Error: $1" 1>&2 ; }
 
 clean_up()
 {
