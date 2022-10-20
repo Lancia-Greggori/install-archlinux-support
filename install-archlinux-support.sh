@@ -2,6 +2,8 @@
 
 # version: 1.1.5
 
+# shellcheck disable=SC2064
+
 set -eu
 
 
@@ -13,6 +15,7 @@ NEWLINE='
 
 PROGRAM_NAME="$(basename "$0")"
 
+ARCH_REPOS_FILE=''; UNIVERSE_REPOS_FILE=''; REPOS_FILE='';
 
 print_help()
 {
@@ -27,13 +30,13 @@ EOF
 
 print_msg() { echo "$PROGRAM_NAME: $1..." ; }
 
-print_error() { echo "Error: $1" 1>&2 ; }
+print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
 
 clean_up()
 {
 	cp /etc/pacman.conf.orig /etc/pacman.conf
 
-	rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt
+	rm -f "$REPOS_FILE" "$ARCH_REPOS_FILE" "$UNIVERSE_REPOS_FILE"
 }
 
 install_pkg()
@@ -95,6 +98,12 @@ sync_with_repos()
 
 [ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' && exit 1
 
+# Ask the user if they really want to proceed
+
+printf 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed? [y/n] '
+
+read -r ANSWER && [ "$ANSWER" != 'y' ] && exit 1
+
 # Check if Arch repos have already been enabled
 
 if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
@@ -105,7 +114,15 @@ if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/nul
 
 fi
 
-trap 'cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f /tmp/repos.html /tmp/arch-repos.txt /tmp/universe-repos.txt' INT
+# Now we start creating the temporary files
+
+ARCH_REPOS_FILE="$(mktemp /tmp/arch-repos-file-XXX)"
+
+UNIVERSE_REPOS_FILE="$(mktemp /tmp/universe-repos-file-XXX)"
+
+REPOS_FILE="$(mktemp /tmp/repos-file-XXX)"
+
+trap "cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f $REPOS_FILE $ARCH_REPOS_FILE $UNIVERSE_REPOS_FILE" INT
 
 
 [ -n "$*" ] && for arg in "$@"; do
@@ -124,7 +141,7 @@ done
 
 # Make a backup of /etc/pacman.conf
 
-print_msg 'Making a copy of /etc/pacman.conf into /etc/pacman.conf.orig'
+print_msg 'Making a backup copy of /etc/pacman.conf into /etc/pacman.conf.orig '
 
 cp -i /etc/pacman.conf /etc/pacman.conf.orig
 
@@ -142,10 +159,10 @@ URL='https://wiki.artixlinux.org/Main/Repositories'
 
 print_msg 'Getting the latest Universe repos'
 
-if wget -q "$URL" -O /tmp/repos.html; then
+if wget -q "$URL" -O "$REPOS_FILE"; then
 
-	awk '/<pre>.*\[universe\]/,/<\/pre>/' /tmp/repos.html | grep -o '>.\+</a>' \
-		| sed -e 's/>//g; s/<\/a>*//g; s/^/Server = /; 1i [universe]' -e "\$a$NEWLINE" > /tmp/universe-repos.txt
+	awk '/<pre>.*\[universe\]/,/<\/pre>/' "$REPOS_FILE" | grep -o '>.\+</a>' \
+		| sed -e 's/>//g; s/<\/a>*//g; s/^/Server = /; 1i [universe]' -e "\$a$NEWLINE" > "$UNIVERSE_REPOS_FILE"
 
 else
 
@@ -165,7 +182,7 @@ if grep -F '[universe]' /etc/pacman.conf 1>/dev/null; then
 
 else
 
-	add_repos '[galaxy]' '/tmp/universe-repos.txt'
+	add_repos '[galaxy]' "$UNIVERSE_REPOS_FILE"
 
 fi
 
@@ -177,19 +194,19 @@ install_pkg artix-archlinux-support
 
 print_msg 'Adding Arch repos'
 
-awk '/^ *\[extra\]/,/<\/pre>/' /tmp/repos.html | sed -e '/<\/pre>/d; s/^ \+//' -e "\$a$NEWLINE" > /tmp/arch-repos.txt
+awk '/^ *\[extra\]/,/<\/pre>/' "$REPOS_FILE" | sed -e '/<\/pre>/d; s/^ \+//' -e "\$a$NEWLINE" > "$ARCH_REPOS_FILE"
 
 # Disable multilib repos if requested
 
 if [ "$NO_MULTILIB" = 'true' ]; then
 
-	LINE_NUM_START="$(grep -Fn '[multilib]' /tmp/arch-repos.txt | cut -d':' -f1)"
+	LINE_NUM_START="$(grep -Fn '[multilib]' "$ARCH_REPOS_FILE" | cut -d':' -f1)"
 
 	LINE_NUM_END="$LINE_NUM_START"
 
 	while true; do
 
-		if sed -n "$((LINE_NUM_END + 1))p" /tmp/arch-repos.txt | grep -E '^(Include|Server)'; then
+		if sed -n "$((LINE_NUM_END + 1))p" "$ARCH_REPOS_FILE" | grep -E '^(Include|Server)'; then
 
 			LINE_NUM_END="$((LINE_NUM_END + 1))"
 
@@ -201,11 +218,11 @@ if [ "$NO_MULTILIB" = 'true' ]; then
 
 	done
 
-	sed -i'' "${LINE_NUM_START},${LINE_NUM_END}d" /tmp/arch-repos.txt
+	sed -i'' "${LINE_NUM_START},${LINE_NUM_END}d" "$ARCH_REPOS_FILE"
 
 fi
 
-add_repos '[universe]' '/tmp/arch-repos.txt'
+add_repos '[universe]' "$ARCH_REPOS_FILE"
 
 print_msg 'Running "pacman-key --populate archlinux"'
 
@@ -217,6 +234,6 @@ fi
 
 sync_with_repos
 
-rm /tmp/repos.html /tmp/universe-repos.txt /tmp/arch-repos.txt
+rm "$REPOS_FILE" "$UNIVERSE_REPOS_FILE" "$ARCH_REPOS_FILE"
 
 echo 'Arch repositories have been added successfully, Have a nice day!'
