@@ -17,6 +17,7 @@ PROGRAM_NAME="$(basename "$0")"
 
 ARCH_REPOS_FILE=''; UNIVERSE_REPOS_FILE=''; REPOS_FILE='';
 
+
 print_help()
 {
 	cat <<EOF
@@ -100,7 +101,7 @@ sync_with_repos()
 
 # Ask the user if they really want to proceed
 
-printf 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed? [y/n] '
+printf 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] '
 
 read -r ANSWER && [ "$ANSWER" != 'y' ] && exit 1
 
@@ -113,6 +114,7 @@ if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/nul
 	exit 1
 
 fi
+
 
 # Now we start creating the temporary files
 
