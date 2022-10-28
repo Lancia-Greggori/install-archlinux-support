@@ -71,7 +71,7 @@ sync_with_repos()
 	case "$arg" in
 		-h|--help)	print_help && exit 0 ;;
 		--no-multilib)	NO_MULTILIB='true' ;;
-		*)	print_error 'unknown option' && print_help && exit 1 ;;
+		*) print_error 'unknown option' && print_help && exit 1 ;;
 	esac
 done
 
