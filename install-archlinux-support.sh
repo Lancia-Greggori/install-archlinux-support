@@ -5,12 +5,14 @@
 
 set -eu
 
+PROGRAM_NAME="$(basename "$0")"
+
 print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
 
 [ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' 1>&2 && exit 1
 
 # Check if Arch repos have already been enabled
-if grep -qE '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf; then
+if grep -qE '^\[(extra|community|multilib)\]' /etc/pacman.conf; then
 	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
 	exit 1
 fi
@@ -23,7 +25,6 @@ NO_MULTILIB='false'
 NEWLINE='
 
 '
-PROGRAM_NAME="$(basename "$0")"
 ARCH_REPOS_FILE=''; UNIVERSE_REPOS_FILE=''; REPOS_FILE='';
 
 print_help()
@@ -96,7 +97,7 @@ trap "cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f $REPOS_FILE $ARCH_REPOS_
 done
 
 # Make a backup of /etc/pacman.conf
-print_msg 'Making a backup copy of /etc/pacman.conf into /etc/pacman.conf.orig '
+print_msg 'making a backup copy of /etc/pacman.conf into /etc/pacman.conf.orig '
 cp -i /etc/pacman.conf /etc/pacman.conf.orig
 
 # Install wget if not installed
@@ -106,7 +107,7 @@ fi
 
 # get the latest universe repos
 URL='https://wiki.artixlinux.org/Main/Repositories'
-print_msg 'Getting the latest Universe repos'
+print_msg 'getting the latest Universe repos'
 if wget -q "$URL" -O "$REPOS_FILE"; then
 	awk '/<pre>.*\[universe\]/,/<\/pre>/' "$REPOS_FILE" | grep -o '>.\+</a>' \
 		| sed -e 's/>//g; s/<\/a>*//g; s/^/Server = /; 1i [universe]' -e "\$a$NEWLINE" > "$UNIVERSE_REPOS_FILE"
@@ -115,9 +116,9 @@ else
 	exit 1
 fi
 # Add the universe repos and install artix-archlinux-support pkg
-print_msg 'Adding the Universe repos to /etc/pacman.conf'
+print_msg 'adding the Universe repos to /etc/pacman.conf'
 if grep -qF '[universe]' /etc/pacman.conf; then
-	print_msg 'The [universe] directive already exists in /etc/pacman.conf, skipping this step'
+	print_msg 'the [universe] directive already exists in /etc/pacman.conf, skipping this step'
 else
 	add_repos '[galaxy]' "$UNIVERSE_REPOS_FILE"
 fi
@@ -127,7 +128,7 @@ sync_with_repos
 install_pkg artix-archlinux-support
 
 # Add the Arch repos
-print_msg 'Adding Arch repos'
+print_msg 'adding Arch repos'
 awk '/^ *\[extra\]/,/<\/pre>/' "$REPOS_FILE" | sed -e '/<\/pre>/d; s/^ \+//' -e "\$a$NEWLINE" > "$ARCH_REPOS_FILE"
 
 # Disable multilib repos if requested
@@ -146,7 +147,7 @@ fi
 
 add_repos '[universe]' "$ARCH_REPOS_FILE"
 
-print_msg 'Running "pacman-key --populate archlinux"'
+print_msg 'running "pacman-key --populate archlinux"'
 if ! pacman-key --populate archlinux; then
 	print_error 'failed in running command "pacman-key --populate archlinux"'
 fi
