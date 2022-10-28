@@ -5,7 +5,7 @@
 
 set -eu
 
-[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' && exit 1
+[ "$(id -u)" -ne '0' ] && echo 'Error: this program needs to be run as root' 1>&2 && exit 1
 
 NO_MULTILIB='false'
 NEWLINE='
@@ -13,7 +13,6 @@ NEWLINE='
 '
 PROGRAM_NAME="$(basename "$0")"
 ARCH_REPOS_FILE=''; UNIVERSE_REPOS_FILE=''; REPOS_FILE='';
-
 
 print_help()
 {
