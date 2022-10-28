@@ -10,7 +10,7 @@ print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
 [ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' 1>&2 && exit 1
 
 # Check if Arch repos have already been enabled
-if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
+if grep -qE '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf; then
 	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
 	exit 1
 fi
@@ -63,7 +63,7 @@ add_repos()
 	LINE_NUM="$(( $(grep -m1 -Fn "$1" /etc/pacman.conf | cut -d':' -f1) + 1 ))"
 	while true; do
 		# See if the line does not start with a "Server" or "Include" keyword
-		if ! sed -n "${LINE_NUM}p" /etc/pacman.conf | grep -E '^(Include|Server)' 1>/dev/null; then
+		if ! sed -n "${LINE_NUM}p" /etc/pacman.conf | grep -qE '^(Include|Server)'; then
 			sed -i'' "${LINE_NUM}r $2" /etc/pacman.conf
 			break
 		else
@@ -116,7 +116,7 @@ else
 fi
 # Add the universe repos and install artix-archlinux-support pkg
 print_msg 'Adding the Universe repos to /etc/pacman.conf'
-if grep -F '[universe]' /etc/pacman.conf 1>/dev/null; then
+if grep -qF '[universe]' /etc/pacman.conf; then
 	print_msg 'The [universe] directive already exists in /etc/pacman.conf, skipping this step'
 else
 	add_repos '[galaxy]' "$UNIVERSE_REPOS_FILE"
