@@ -6,21 +6,6 @@
 set -eu
 
 PROGRAM_NAME="$(basename "$0")"
-
-print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
-
-[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' 1>&2 && exit 1
-
-# Check if Arch repos have already been enabled
-if grep -qE '^\[(extra|community|multilib)\]' /etc/pacman.conf; then
-	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
-	exit 1
-fi
-
-# Ask the user if they really want to proceed
-read -p 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER \
-	&& [ "$ANSWER" != 'y' ] && exit 1
-
 NO_MULTILIB='false'
 NEWLINE='
 
@@ -37,6 +22,8 @@ Available Options:
 	--no-multilib	Prevent the multilib repos from being installed in /etc/pacman.conf
 EOF
 }
+
+print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
 
 print_msg() { echo "$PROGRAM_NAME: $1..." ; }
 
@@ -82,12 +69,6 @@ sync_with_repos()
 	fi
 }
 
-# Now we start creating the temporary files
-ARCH_REPOS_FILE="$(mktemp /tmp/arch-repos-file-XXX)"
-UNIVERSE_REPOS_FILE="$(mktemp /tmp/universe-repos-file-XXX)"
-REPOS_FILE="$(mktemp /tmp/repos-file-XXX)"
-trap "cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f $REPOS_FILE $ARCH_REPOS_FILE $UNIVERSE_REPOS_FILE" INT EXIT
-
 [ -n "$*" ] && for arg in "$@"; do
 	case "$arg" in
 		-h|--help)	print_help && exit 0 ;;
@@ -95,6 +76,24 @@ trap "cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f $REPOS_FILE $ARCH_REPOS_
 		*)	print_error 'unknown option' && print_help && exit 1 ;;
 	esac
 done
+
+# Check if Arch repos have already been enabled
+if grep -qE '^\[(extra|community|multilib)\]' /etc/pacman.conf; then
+	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
+	exit 1
+fi
+
+[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' 1>&2 && exit 1
+
+# Ask the user if they really want to proceed
+read -p 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER \
+	&& [ "$ANSWER" != 'y' ] && exit 1
+
+# Now we start creating the temporary files
+ARCH_REPOS_FILE="$(mktemp /tmp/arch-repos-file-XXX)"
+UNIVERSE_REPOS_FILE="$(mktemp /tmp/universe-repos-file-XXX)"
+REPOS_FILE="$(mktemp /tmp/repos-file-XXX)"
+trap "cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f $REPOS_FILE $ARCH_REPOS_FILE $UNIVERSE_REPOS_FILE" INT EXIT
 
 # Make a backup of /etc/pacman.conf
 print_msg 'making a backup copy of /etc/pacman.conf into /etc/pacman.conf.orig '
