@@ -5,7 +5,19 @@
 
 set -eu
 
-[ "$(id -u)" -ne '0' ] && echo 'Error: this program needs to be run as root' 1>&2 && exit 1
+print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
+
+[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' 1>&2 && exit 1
+
+# Check if Arch repos have already been enabled
+if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
+	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
+	exit 1
+fi
+
+# Ask the user if they really want to proceed
+read -p 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER \
+	&& [ "$ANSWER" != 'y' ] && exit 1
 
 NO_MULTILIB='false'
 NEWLINE='
@@ -27,8 +39,6 @@ EOF
 
 print_msg() { echo "$PROGRAM_NAME: $1..." ; }
 
-print_error() { echo "$PROGRAM_NAME: $1" 1>&2 ; }
-
 clean_up()
 {
 	cp /etc/pacman.conf.orig /etc/pacman.conf
@@ -37,7 +47,7 @@ clean_up()
 
 install_pkg()
 {
-	print_msg "Installing $1"
+	print_msg "installing $1"
 	if ! pacman -S --noconfirm "$1"; then
 		print_error "failed to install $1"
 		clean_up
@@ -50,7 +60,7 @@ add_repos()
 	# Arg1: the directive to add after
 	# Arg2: the file that contains the repos to be added
 	# Find the line number that contains the desired directive, and start placing the repos after that
-	LINE_NUM="$(( $(grep -Fn "$1" /etc/pacman.conf | cut -d':' -f1) + 1 ))"
+	LINE_NUM="$(( $(grep -m1 -Fn "$1" /etc/pacman.conf | cut -d':' -f1) + 1 ))"
 	while true; do
 		# See if the line does not start with a "Server" or "Include" keyword
 		if ! sed -n "${LINE_NUM}p" /etc/pacman.conf | grep -E '^(Include|Server)' 1>/dev/null; then
@@ -70,16 +80,6 @@ sync_with_repos()
 		exit 1
 	fi
 }
-
-# Ask the user if they really want to proceed
-read -p 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER \
-	&& [ "$ANSWER" != 'y' ] && exit 1
-
-# Check if Arch repos have already been enabled
-if grep -E '^(\[extra\]|\[community\]|\[multilib\])' /etc/pacman.conf 1>/dev/null; then
-	print_error 'Arch repos have already been enabled in /etc/pacman.conf'
-	exit 1
-fi
 
 # Now we start creating the temporary files
 ARCH_REPOS_FILE="$(mktemp /tmp/arch-repos-file-XXX)"
@@ -132,7 +132,7 @@ awk '/^ *\[extra\]/,/<\/pre>/' "$REPOS_FILE" | sed -e '/<\/pre>/d; s/^ \+//' -e 
 
 # Disable multilib repos if requested
 if [ "$NO_MULTILIB" = 'true' ]; then
-	LINE_NUM_START="$(grep -Fn '[multilib]' "$ARCH_REPOS_FILE" | cut -d':' -f1)"
+	LINE_NUM_START="$(grep -m1 -Fn '[multilib]' "$ARCH_REPOS_FILE" | cut -d':' -f1)"
 	LINE_NUM_END="$LINE_NUM_START"
 	while true; do
 		if sed -n "$((LINE_NUM_END + 1))p" "$ARCH_REPOS_FILE" | grep -E '^(Include|Server)'; then
