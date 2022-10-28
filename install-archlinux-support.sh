@@ -16,9 +16,7 @@ print_help()
 {
 	cat <<EOF
 Usage: $PROGRAM_NAME [OPTIONS]
-
 Available Options:
-
 	--no-multilib	Prevent the multilib repos from being installed in /etc/pacman.conf
 EOF
 }
