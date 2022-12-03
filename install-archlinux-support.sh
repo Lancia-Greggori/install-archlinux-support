@@ -39,10 +39,10 @@ install_pkg()
 	fi
 }
 
+# $1: the directive to add after
+# $2: the file that contains the repos to be added
 add_repos()
 {
-	# Arg1: the directive to add after
-	# Arg2: the file that contains the repos to be added
 	# Find the line number that contains the desired directive, and start placing the repos after that
 	LINE_NUM="$(( $(grep -m1 -Fn "$1" /etc/pacman.conf | cut -d':' -f1) + 1 ))"
 	while true; do
@@ -79,7 +79,7 @@ if grep -qE '^\[(extra|community|multilib)\]' /etc/pacman.conf; then
 	exit 1
 fi
 
-[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' 1>&2 && exit 1
+[ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' && exit 1
 
 # Ask the user if they really want to proceed
 read -p 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER \
@@ -110,6 +110,7 @@ else
 	print_error "failed to retrieve the list of repositories from $URL"
 	exit 1
 fi
+
 # Add the universe repos and install artix-archlinux-support pkg
 print_msg 'adding the Universe repos to /etc/pacman.conf'
 if grep -qF '[universe]' /etc/pacman.conf; then
