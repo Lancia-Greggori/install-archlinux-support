@@ -1,9 +1,7 @@
-#!/bin/sh
+#!/bin/sh -eu
 
-# version: 1.1.5
+# version: 1.1.6
 # shellcheck disable=SC2064
-
-set -eu
 
 PROGRAM_NAME="$(basename "$0")"
 NO_MULTILIB='false'
