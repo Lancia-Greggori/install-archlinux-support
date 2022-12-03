@@ -82,8 +82,8 @@ fi
 [ "$(id -u)" -ne '0' ] && print_error 'this program needs to be run as root' && exit 1
 
 # Ask the user if they really want to proceed
-read -p 'Warning: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER \
-	&& [ "$ANSWER" != 'y' ] && exit 1
+read -p 'WARNING: this program will install Arch repositories onto your system, are you sure you want to proceed?[y/n] ' -r ANSWER
+[ "$ANSWER" != 'y' ] && exit 1
 
 # Now we start creating the temporary files
 ARCH_REPOS_FILE="$(mktemp /tmp/arch-repos-file-XXX)"
