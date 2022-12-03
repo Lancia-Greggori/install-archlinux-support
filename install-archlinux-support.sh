@@ -89,6 +89,7 @@ read -p 'WARNING: this program will install Arch repositories onto your system, 
 ARCH_REPOS_FILE="$(mktemp /tmp/arch-repos-file-XXX)"
 UNIVERSE_REPOS_FILE="$(mktemp /tmp/universe-repos-file-XXX)"
 REPOS_FILE="$(mktemp /tmp/repos-file-XXX)"
+
 trap "cp /etc/pacman.conf.orig /etc/pacman.conf;  rm -f $REPOS_FILE $ARCH_REPOS_FILE $UNIVERSE_REPOS_FILE" INT EXIT
 
 # Make a backup of /etc/pacman.conf
